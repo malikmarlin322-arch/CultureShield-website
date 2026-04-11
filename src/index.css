@@ -32,7 +32,7 @@
   /* Spacing */
   --section-y: clamp(88px, 11vw, 140px);
   --container-max: 1200px;
-  --container-px: clamp(20px, 5vw, 40px);
+  --container-px: clamp(24px, 5vw, 40px);
 
   /* Radius */
   --radius-sm: 8px;
@@ -367,43 +367,85 @@ button {
   border-color: rgba(10,22,40,0.14);
 }
 
-/* Mobile nav overlay */
-.mobile-nav {
-  display: none;
+/* Mobile nav overlay backdrop */
+.mobile-nav-overlay {
   position: fixed;
   inset: 0;
-  top: 92px;
+  z-index: 998;
+  background: rgba(6,13,24,0.4);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.35s var(--ease-out), visibility 0.35s;
+  pointer-events: none;
+}
+
+.mobile-nav-overlay.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Mobile nav panel */
+.mobile-nav {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 380px;
   z-index: 999;
   background: var(--white);
-  padding: 24px var(--container-px) 40px;
+  padding: 120px var(--container-px) 40px;
+  display: flex;
   flex-direction: column;
-  gap: 8px;
+  justify-content: flex-start;
+  gap: 0;
+  transform: translateX(100%);
+  visibility: hidden;
+  transition: transform 0.4s var(--ease-out), visibility 0.4s;
+  box-shadow: -8px 0 40px rgba(10,22,40,0.12);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .mobile-nav.open {
-  display: flex;
+  transform: translateX(0);
+  visibility: visible;
 }
 
-.mobile-nav a {
+.mobile-nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.mobile-nav-links a {
   display: block;
-  padding: 16px 0;
+  padding: 20px 0;
   font-family: var(--font-display);
-  font-size: 1.05rem;
-  font-weight: 500;
-  color: var(--gray-700);
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--navy-900);
   border-bottom: 1px solid var(--gray-100);
   transition: color 0.2s ease;
+  letter-spacing: -0.01em;
 }
 
-.mobile-nav a:hover {
+.mobile-nav-links a:first-child {
+  border-top: 1px solid var(--gray-100);
+}
+
+.mobile-nav-links a:hover {
   color: var(--teal-500);
 }
 
-.mobile-nav .btn {
-  margin-top: 16px;
+.mobile-nav-cta {
+  margin-top: 32px;
   text-align: center;
-  min-height: 48px;
+  min-height: 52px;
+  width: 100%;
+  justify-content: center;
+  font-size: 0.95rem;
 }
 
 @media (max-width: 900px) {
@@ -576,20 +618,29 @@ button {
   }
 
   .hero-copy {
-    max-width: 100%;
+    max-width: 92%;
   }
 
   .hero-copy h1 {
-    font-size: clamp(1.9rem, 7vw, 2.8rem);
+    font-size: clamp(1.85rem, 6.5vw, 2.6rem);
+    margin-bottom: 20px;
   }
 
   .hero-text {
-    font-size: 1.05rem;
+    font-size: 1rem;
+    line-height: 1.7;
     margin-bottom: 32px;
   }
 
   .hero-actions {
-    margin-bottom: 36px;
+    margin-bottom: 32px;
+    gap: 12px;
+  }
+
+  .hero-actions .btn {
+    padding: 12px 22px;
+    font-size: 0.9rem;
+    min-height: 46px;
   }
 
   .hero-badges {
@@ -597,7 +648,7 @@ button {
   }
 
   .hero-badge {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     padding: 6px 12px;
   }
 }
@@ -1328,7 +1379,7 @@ button {
 @media (max-width: 480px) {
   :root {
     --section-y: 72px;
-    --container-px: 20px;
+    --container-px: 24px;
   }
 
   body {
@@ -1346,12 +1397,15 @@ button {
   .btn {
     font-size: 0.9rem;
     padding: 13px 24px;
-    width: 100%;
-    justify-content: center;
   }
 
   .hero-actions {
     flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hero-actions .btn {
+    width: auto;
   }
 
   .navbar-logo-img {
@@ -1419,13 +1473,14 @@ button {
    FOOTER LOGO (light PNG variant)
    ============================================================ */
 .footer-logo-img {
-  height: 108px;
+  height: auto;
   width: auto;
-  max-width: min(100%, 420px);
+  max-height: 80px;
+  max-width: min(100%, 320px);
   object-fit: contain;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
-  filter: drop-shadow(0 16px 30px rgba(0,0,0,0.22));
+  filter: drop-shadow(0 1px 0 rgba(255,255,255,0.08));
   flex-shrink: 0;
 }
 
@@ -1530,6 +1585,10 @@ button {
 @media (max-width: 600px) {
   .sp-hero-actions {
     flex-direction: column;
+    align-items: flex-start;
+  }
+  .sp-hero-actions .btn {
+    width: auto;
   }
   .sp-hero h1 {
     font-size: clamp(1.8rem, 7vw, 2.6rem);
@@ -1853,6 +1912,10 @@ button {
 @media (max-width: 500px) {
   .sp-cta-actions {
     flex-direction: column;
+    align-items: center;
+  }
+  .sp-cta-actions .btn {
+    width: auto;
   }
 }
 
@@ -1934,11 +1997,11 @@ button {
   }
 
   .mobile-nav {
-    top: 88px;
+    padding-top: 110px;
   }
 
   .footer-logo-img {
-    height: 92px;
+    max-height: 72px;
   }
 }
 
@@ -1966,10 +2029,10 @@ button {
   }
 
   .mobile-nav {
-    top: 84px;
+    padding-top: 104px;
   }
 
   .footer-logo-img {
-    height: 84px;
+    max-height: 64px;
   }
 }

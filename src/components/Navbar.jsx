@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import logoImg from "../assets/CultureShield_Logo_4.png"
 
 export default function Navbar() {
@@ -7,7 +7,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrollProgress, setScrollProgress] = useState(0)
   const location = useLocation()
-  const isHome = location.pathname === "/"
+  const navigate = useNavigate()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -20,13 +20,29 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
+  // Lock body scroll when menu is open
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : ""
     return () => { document.body.style.overflow = "" }
   }, [menuOpen])
 
+  // Close menu on route change
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [location.pathname])
+
   const close = () => setMenuOpen(false)
-  const sectionHref = (hash) => isHome ? hash : `/${hash}`
+
+  const handleGetStarted = (e) => {
+    e.preventDefault()
+    close()
+    if (location.pathname === "/") {
+      const el = document.getElementById("contact")
+      if (el) el.scrollIntoView({ behavior: "smooth" })
+    } else {
+      navigate("/#contact")
+    }
+  }
 
   return (
     <header className={`navbar${scrolled ? " scrolled" : ""}`}>
@@ -46,11 +62,10 @@ export default function Navbar() {
         </Link>
 
         <nav className="navbar-links">
-          <a href={sectionHref("#services")}>Services</a>
-          <a href={sectionHref("#why-us")}>Why Us</a>
-          <a href={sectionHref("#how-it-works")}>How It Works</a>
-          <a href={sectionHref("#who-we-serve")}>Who We Serve</a>
-          <a href={sectionHref("#contact")} className="btn btn-primary navbar-cta">
+          <Link to="/services">Services</Link>
+          <Link to="/why-cultureshield">Why CultureShield</Link>
+          <Link to="/who-we-serve">Who We Serve</Link>
+          <a href="/#contact" className="btn btn-primary navbar-cta" onClick={handleGetStarted}>
             Get Started
             <svg className="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
           </a>
@@ -70,14 +85,21 @@ export default function Navbar() {
         </button>
       </div>
 
+      {/* Mobile overlay backdrop */}
+      <div
+        className={`mobile-nav-overlay${menuOpen ? " open" : ""}`}
+        onClick={close}
+        aria-hidden="true"
+      />
       <nav className={`mobile-nav${menuOpen ? " open" : ""}`}>
-        <a href={sectionHref("#services")} onClick={close}>Services</a>
-        <a href={sectionHref("#why-us")} onClick={close}>Why Us</a>
-        <a href={sectionHref("#how-it-works")} onClick={close}>How It Works</a>
-        <a href={sectionHref("#who-we-serve")} onClick={close}>Who We Serve</a>
-        <a href={sectionHref("#founder")} onClick={close}>Founder</a>
-        <a href={sectionHref("#contact")} className="btn btn-primary" onClick={close}>
+        <div className="mobile-nav-links">
+          <Link to="/services" onClick={close}>Services</Link>
+          <Link to="/why-cultureshield" onClick={close}>Why CultureShield</Link>
+          <Link to="/who-we-serve" onClick={close}>Who We Serve</Link>
+        </div>
+        <a href="/#contact" className="btn btn-primary mobile-nav-cta" onClick={handleGetStarted}>
           Get Started
+          <svg className="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         </a>
       </nav>
     </header>

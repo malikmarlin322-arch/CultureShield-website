@@ -33,10 +33,9 @@ export default function Footer() {
 
           <div className="footer-col">
             <h4>Company</h4>
-            <a href="/#why-us">Why CultureShield</a>
-            <a href="/#how-it-works">How It Works</a>
-            <a href="/#who-we-serve">Who We Serve</a>
-            <a href="/#founder">Founder</a>
+            <Link to="/why-cultureshield">Why CultureShield</Link>
+            <Link to="/who-we-serve">Who We Serve</Link>
+            <Link to="/services">All Services</Link>
           </div>
 
           <div className="footer-col">
