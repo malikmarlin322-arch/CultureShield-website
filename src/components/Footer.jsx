@@ -40,7 +40,7 @@ export default function Footer() {
 
           <div className="footer-col">
             <h4>Contact</h4>
-            <a href="mailto:hello@cultureshield.co">hello@cultureshield.co</a>
+            <a href="mailto:hello@cultureshieldlabs.com">hello@cultureshieldlabs.com</a>
             <a href="/#contact">Schedule a Consultation</a>
           </div>
         </div>

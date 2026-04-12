@@ -1,14 +1,61 @@
 import { useState } from "react"
 import useScrollReveal from "../hooks/useScrollReveal"
 
+/**
+ * Contact form — submits to Formspree.
+ *
+ * SETUP REQUIRED (see CONTACT_FORM_SETUP.md for full instructions):
+ *   1. Create a free Formspree account at https://formspree.io
+ *   2. Create a new form, set the receiving email to hello@cultureshieldlabs.com
+ *   3. Copy the form's endpoint (e.g. https://formspree.io/f/abcdwxyz)
+ *   4. In Vercel, add an environment variable:
+ *        VITE_FORMSPREE_ENDPOINT = https://formspree.io/f/abcdwxyz
+ *      (Or replace the FORM_ENDPOINT_FALLBACK constant below directly.)
+ *
+ * No backend code or serverless function is required.
+ */
+
+const FORM_ENDPOINT_FALLBACK = "https://formspree.io/f/REPLACE_WITH_YOUR_ID"
+const FORM_ENDPOINT = import.meta.env.VITE_FORMSPREE_ENDPOINT || FORM_ENDPOINT_FALLBACK
+
 export default function Contact() {
-  const [submitted, setSubmitted] = useState(false)
+  const [status, setStatus] = useState("idle") // idle | submitting | success | error
+  const [errorMsg, setErrorMsg] = useState("")
   const sectionRef = useScrollReveal({ threshold: 0.1, stagger: 120 })
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Replace with actual form handler (e.g., Formspree, Netlify Forms)
-    setSubmitted(true)
+    setStatus("submitting")
+    setErrorMsg("")
+
+    const form = e.currentTarget
+    const formData = new FormData(form)
+
+    // Subject line that will appear in the inbox at hello@cultureshieldlabs.com
+    formData.append("_subject", `New inquiry from ${formData.get("name") || "website visitor"}`)
+
+    try {
+      const response = await fetch(FORM_ENDPOINT, {
+        method: "POST",
+        body: formData,
+        headers: { Accept: "application/json" },
+      })
+
+      if (response.ok) {
+        setStatus("success")
+        form.reset()
+      } else {
+        const data = await response.json().catch(() => ({}))
+        const message =
+          data?.errors?.map((err) => err.message).join(", ") ||
+          "Something went wrong. Please try again, or email us directly."
+        setStatus("error")
+        setErrorMsg(message)
+      }
+    } catch (err) {
+      setStatus("error")
+      setErrorMsg("Network error. Please try again, or email us directly at hello@cultureshieldlabs.com.")
+    }
   }
 
   return (
@@ -31,7 +78,7 @@ export default function Contact() {
                   <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
                 </svg>
               </div>
-              <span>hello@cultureshield.co</span>
+              <a href="mailto:hello@cultureshieldlabs.com" className="contact-info-link">hello@cultureshieldlabs.com</a>
             </div>
 
             <div className="contact-info-item">
@@ -57,39 +104,40 @@ export default function Contact() {
         </div>
 
         <div className="contact-form reveal-item">
-          {submitted ? (
-            <div style={{ textAlign: "center", padding: "40px 0" }}>
-              <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--teal-50)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+          {status === "success" ? (
+            <div className="form-status form-status-success">
+              <div className="form-status-icon">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--teal-500)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
               </div>
-              <h3 style={{ fontFamily: "var(--font-display)", fontSize: "1.3rem", marginBottom: 8, color: "var(--navy-900)" }}>
-                Message received
-              </h3>
-              <p style={{ color: "var(--gray-500)", lineHeight: 1.6 }}>
-                We'll review your inquiry and respond within 24 hours.
+              <h3>Message received</h3>
+              <p>
+                Thanks for reaching out — we'll review your inquiry and respond within 24 hours at the email you provided.
               </p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} noValidate>
+              {/* Honeypot field for basic bot protection (Formspree convention) */}
+              <input type="text" name="_gotcha" tabIndex="-1" autoComplete="off" style={{ display: "none" }} />
+
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="name">Full Name</label>
-                  <input type="text" id="name" placeholder="Dr. Jane Smith" required />
+                  <input type="text" id="name" name="name" placeholder="Dr. Jane Smith" required />
                 </div>
                 <div className="form-group">
                   <label htmlFor="email">Work Email</label>
-                  <input type="email" id="email" placeholder="jane@lab.edu" required />
+                  <input type="email" id="email" name="email" placeholder="jane@lab.edu" required />
                 </div>
               </div>
 
               <div className="form-group">
                 <label htmlFor="org">Organization</label>
-                <input type="text" id="org" placeholder="Company or university name" />
+                <input type="text" id="org" name="organization" placeholder="Company or university name" />
               </div>
 
               <div className="form-group">
                 <label htmlFor="type">Lab Type</label>
-                <select id="type" defaultValue="">
+                <select id="type" name="lab_type" defaultValue="" required>
                   <option value="" disabled>Select your lab environment</option>
                   <option>Biotech startup</option>
                   <option>University research lab</option>
@@ -103,14 +151,28 @@ export default function Contact() {
                 <label htmlFor="message">How can we help?</label>
                 <textarea
                   id="message"
+                  name="message"
                   placeholder="Tell us about your lab environment and what kind of support you're looking for..."
                   rows="4"
+                  required
                 />
               </div>
 
-              <button type="submit" className="btn btn-accent" style={{ width: "100%" }}>
-                Submit Inquiry
-                <svg className="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              {status === "error" && (
+                <div className="form-status form-status-error" role="alert">
+                  <p>{errorMsg}</p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="btn btn-accent contact-submit-btn"
+                disabled={status === "submitting"}
+              >
+                {status === "submitting" ? "Sending…" : "Submit Inquiry"}
+                {status !== "submitting" && (
+                  <svg className="arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                )}
               </button>
             </form>
           )}
