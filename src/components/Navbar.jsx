@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import logoImg from "../assets/CultureShield_Logo_4.png"
 
@@ -8,6 +8,7 @@ export default function Navbar() {
   const [scrollProgress, setScrollProgress] = useState(0)
   const location = useLocation()
   const navigate = useNavigate()
+  const scrollPosRef = useRef(0)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -20,16 +21,64 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // Lock body scroll when menu is open
+  /**
+   * Bulletproof body scroll lock that works on iOS Safari.
+   * Plain `overflow: hidden` is ignored by iOS — we have to pin the body
+   * with `position: fixed` and restore scroll position on close.
+   */
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : ""
-    return () => { document.body.style.overflow = "" }
+    const body = document.body
+    const html = document.documentElement
+
+    if (menuOpen) {
+      scrollPosRef.current = window.scrollY || window.pageYOffset || 0
+      body.style.position = "fixed"
+      body.style.top = `-${scrollPosRef.current}px`
+      body.style.left = "0"
+      body.style.right = "0"
+      body.style.width = "100%"
+      body.style.overflow = "hidden"
+      html.style.overflow = "hidden"
+    } else {
+      const restore = scrollPosRef.current
+      body.style.position = ""
+      body.style.top = ""
+      body.style.left = ""
+      body.style.right = ""
+      body.style.width = ""
+      body.style.overflow = ""
+      html.style.overflow = ""
+      // Only restore if we actually have a position to restore (avoids initial jump)
+      if (restore > 0) {
+        window.scrollTo(0, restore)
+      }
+    }
+
+    return () => {
+      body.style.position = ""
+      body.style.top = ""
+      body.style.left = ""
+      body.style.right = ""
+      body.style.width = ""
+      body.style.overflow = ""
+      html.style.overflow = ""
+    }
   }, [menuOpen])
 
-  // Close menu on route change
+  // Close on route change
   useEffect(() => {
     setMenuOpen(false)
   }, [location.pathname])
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!menuOpen) return
+    const onKey = (e) => {
+      if (e.key === "Escape") setMenuOpen(false)
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [menuOpen])
 
   const close = () => setMenuOpen(false)
 
@@ -45,7 +94,7 @@ export default function Navbar() {
   }
 
   return (
-    <header className={`navbar${scrolled ? " scrolled" : ""}`}>
+    <header className={`navbar${scrolled ? " scrolled" : ""}${menuOpen ? " menu-open" : ""}`}>
       <div
         className="scroll-progress"
         style={{ transform: `scaleX(${scrollProgress / 100})` }}
@@ -74,8 +123,9 @@ export default function Navbar() {
         <button
           className="mobile-menu-btn"
           onClick={() => setMenuOpen(prev => !prev)}
-          aria-label="Toggle navigation"
+          aria-label={menuOpen ? "Close navigation" : "Open navigation"}
           aria-expanded={menuOpen}
+          aria-controls="mobile-nav-panel"
         >
           {menuOpen ? (
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
@@ -85,13 +135,23 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Mobile overlay backdrop */}
+      {/* Backdrop — clicking it closes the menu and blocks page interaction */}
       <div
-        className={`mobile-nav-overlay${menuOpen ? " open" : ""}`}
+        className={`mobile-nav-backdrop${menuOpen ? " open" : ""}`}
         onClick={close}
+        onTouchMove={(e) => e.preventDefault()}
         aria-hidden="true"
       />
-      <nav className={`mobile-nav${menuOpen ? " open" : ""}`}>
+
+      {/* Slide-in nav panel */}
+      <nav
+        id="mobile-nav-panel"
+        className={`mobile-nav${menuOpen ? " open" : ""}`}
+        aria-hidden={!menuOpen}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mobile navigation"
+      >
         <div className="mobile-nav-links">
           <Link to="/services" onClick={close}>Services</Link>
           <Link to="/why-cultureshield" onClick={close}>Why CultureShield</Link>

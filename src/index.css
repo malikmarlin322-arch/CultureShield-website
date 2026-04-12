@@ -254,7 +254,7 @@ button {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 1000;
+  z-index: 1200;
   background: rgba(250,251,252,0.5);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -268,6 +268,11 @@ button {
   background: rgba(250,251,252,0.97);
   border-bottom-color: rgba(228,232,237,0.7);
   box-shadow: 0 1px 16px rgba(10,22,40,0.06);
+}
+
+.navbar.menu-open {
+  background: var(--white);
+  border-bottom-color: rgba(228,232,237,0.9);
 }
 
 .navbar-inner {
@@ -367,25 +372,30 @@ button {
   border-color: rgba(10,22,40,0.14);
 }
 
-/* Mobile nav overlay backdrop */
-.mobile-nav-overlay {
+/* Mobile nav backdrop — dims and blocks the page behind the panel */
+.mobile-nav-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 998;
-  background: rgba(6,13,24,0.4);
+  z-index: 1100;
+  background: rgba(6, 13, 24, 0.55);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.35s var(--ease-out), visibility 0.35s;
   pointer-events: none;
+  /* Block scroll/touch from passing through to the page below */
+  touch-action: none;
+  overscroll-behavior: contain;
 }
 
-.mobile-nav-overlay.open {
+.mobile-nav-backdrop.open {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
 }
 
-/* Mobile nav panel */
+/* Mobile nav panel — slides in from the right above the backdrop */
 .mobile-nav {
   position: fixed;
   top: 0;
@@ -393,7 +403,7 @@ button {
   bottom: 0;
   width: 100%;
   max-width: 360px;
-  z-index: 999;
+  z-index: 1101;
   background: var(--white);
   padding: 96px 28px 32px;
   display: flex;
@@ -403,8 +413,9 @@ button {
   transform: translateX(100%);
   visibility: hidden;
   transition: transform 0.4s var(--ease-out), visibility 0.4s;
-  box-shadow: -8px 0 40px rgba(10,22,40,0.12);
+  box-shadow: -8px 0 40px rgba(10, 22, 40, 0.18);
   overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 .mobile-nav.open {
@@ -431,7 +442,8 @@ button {
   line-height: 1.2;
 }
 
-.mobile-nav-links a:hover {
+.mobile-nav-links a:hover,
+.mobile-nav-links a:active {
   color: var(--teal-500);
 }
 
