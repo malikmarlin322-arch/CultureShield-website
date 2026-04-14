@@ -395,17 +395,21 @@ button {
   pointer-events: auto;
 }
 
-/* Mobile nav panel — slides in from the right above the backdrop */
+/*
+ * Mobile nav panel — slides in from the right immediately below the navbar.
+ * `top` is set inline at runtime via --navbar-height (measured from the live
+ * navbar element) so the panel never has a dead band above its first item.
+ */
 .mobile-nav {
   position: fixed;
-  top: 0;
+  top: var(--navbar-height, 88px);
   right: 0;
   bottom: 0;
   width: 100%;
   max-width: 360px;
   z-index: 1101;
   background: var(--white);
-  padding: 96px 28px 32px;
+  padding: 20px 28px 28px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -414,7 +418,8 @@ button {
   visibility: hidden;
   transition: transform 0.4s var(--ease-out), visibility 0.4s;
   box-shadow: -8px 0 40px rgba(10, 22, 40, 0.18);
-  overflow: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
 
@@ -431,9 +436,9 @@ button {
 
 .mobile-nav-links a {
   display: block;
-  padding: 18px 0;
+  padding: 16px 0;
   font-family: var(--font-display);
-  font-size: 1.08rem;
+  font-size: 1.05rem;
   font-weight: 600;
   color: var(--navy-900);
   border-bottom: 1px solid var(--gray-100);
@@ -442,13 +447,17 @@ button {
   line-height: 1.2;
 }
 
+.mobile-nav-links a:first-child {
+  border-top: 1px solid var(--gray-100);
+}
+
 .mobile-nav-links a:hover,
 .mobile-nav-links a:active {
   color: var(--teal-500);
 }
 
 .mobile-nav-cta {
-  margin-top: 24px;
+  margin-top: 20px;
   text-align: center;
   min-height: 50px;
   width: 100%;
@@ -2004,10 +2013,6 @@ button {
     max-width: 58vw;
   }
 
-  .mobile-nav {
-    padding-top: 96px;
-  }
-
   .footer-logo-img {
     max-height: 72px;
   }
@@ -2037,18 +2042,16 @@ button {
   }
 
   .mobile-nav {
-    padding-top: 88px;
-    padding-left: 24px;
-    padding-right: 24px;
+    padding: 18px 24px 24px;
   }
 
   .mobile-nav-links a {
-    padding: 16px 0;
-    font-size: 1.05rem;
+    padding: 15px 0;
+    font-size: 1.02rem;
   }
 
   .mobile-nav-cta {
-    margin-top: 20px;
+    margin-top: 18px;
     min-height: 48px;
   }
 

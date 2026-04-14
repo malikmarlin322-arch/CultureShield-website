@@ -9,6 +9,37 @@ export default function Navbar() {
   const location = useLocation()
   const navigate = useNavigate()
   const scrollPosRef = useRef(0)
+  const headerRef = useRef(null)
+
+  /**
+   * Measure the live navbar height and publish it to CSS as --navbar-height.
+   * The mobile nav panel reads this variable for its `top` so it always starts
+   * flush against the bottom of the navbar — no hardcoded offsets, no gaps.
+   */
+  useEffect(() => {
+    const el = headerRef.current
+    if (!el) return
+
+    const publish = () => {
+      const h = el.getBoundingClientRect().height
+      document.documentElement.style.setProperty("--navbar-height", `${Math.round(h)}px`)
+    }
+
+    publish()
+
+    let ro
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(publish)
+      ro.observe(el)
+    }
+    window.addEventListener("resize", publish)
+    window.addEventListener("orientationchange", publish)
+    return () => {
+      if (ro) ro.disconnect()
+      window.removeEventListener("resize", publish)
+      window.removeEventListener("orientationchange", publish)
+    }
+  }, [])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -94,7 +125,7 @@ export default function Navbar() {
   }
 
   return (
-    <header className={`navbar${scrolled ? " scrolled" : ""}${menuOpen ? " menu-open" : ""}`}>
+    <header ref={headerRef} className={`navbar${scrolled ? " scrolled" : ""}${menuOpen ? " menu-open" : ""}`}>
       <div
         className="scroll-progress"
         style={{ transform: `scaleX(${scrollProgress / 100})` }}
