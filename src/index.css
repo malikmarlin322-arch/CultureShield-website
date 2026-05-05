@@ -270,11 +270,6 @@ button {
   box-shadow: 0 1px 16px rgba(10,22,40,0.06);
 }
 
-.navbar.menu-open {
-  background: var(--white);
-  border-bottom-color: rgba(228,232,237,0.9);
-}
-
 .navbar-inner {
   display: flex;
   align-items: center;
@@ -372,97 +367,198 @@ button {
   border-color: rgba(10,22,40,0.14);
 }
 
-/* Mobile nav backdrop — dims and blocks the page behind the panel */
-.mobile-nav-backdrop {
+/* ============================================================
+   MOBILE OFF-CANVAS DRAWER (replaces old top-dropdown menu)
+   ------------------------------------------------------------
+   Architecture
+   ------------
+   .page-shell      → wraps Navbar + Routes + Footer. Slides RIGHT when
+                      the drawer opens, pushing the whole page out of the way.
+   .mobile-drawer   → fixed-position panel that slides in from the LEFT.
+   .mobile-drawer-backdrop → fades in over the visible page on the right.
+
+   Stacking order (bottom → top)
+   -----------------------------
+   page-shell content (own stacking context via transform)
+     └── navbar (z 1000, inside page-shell stacking context)
+   mobile-drawer-backdrop (z 1190, body level)
+   mobile-drawer        (z 1200, body level)
+   ============================================================ */
+
+/* The page shell. translateX(0) is always applied so a stacking context
+   exists at all times — this keeps the navbar's fixed positioning consistent
+   on every render and prevents a one-frame layout flash on first open. */
+.page-shell {
+  transform: translateX(0);
+  transition: transform 0.4s var(--ease-out);
+  min-height: 100vh;
+  position: relative;
+  /* Hint to the compositor that this layer will move — much smoother on
+     low-powered mobile devices. */
+  will-change: transform;
+}
+
+/* Drawer backdrop (overlay) — covers the viewport, dims the visible page
+   strip on the right while the drawer is open. */
+.mobile-drawer-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1100;
-  background: rgba(6, 13, 24, 0.55);
+  z-index: 1190;
+  background: rgba(6, 13, 24, 0.45);
   backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(2px);
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.35s var(--ease-out), visibility 0.35s;
+  transition: opacity 0.4s var(--ease-out), visibility 0.4s;
   pointer-events: none;
-  /* Block scroll/touch from passing through to the page below */
+  /* Block touch scroll from passing through to the page below on iOS. */
   touch-action: none;
   overscroll-behavior: contain;
 }
 
-.mobile-nav-backdrop.open {
+.mobile-drawer-backdrop.open {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
 }
 
-/*
- * Mobile nav panel — slides in from the right immediately below the navbar.
- * `top` is set inline at runtime via --navbar-height (measured from the live
- * navbar element) so the panel never has a dead band above its first item.
- */
-.mobile-nav {
+/* Drawer panel — slides in from the left. Off-screen by default. */
+.mobile-drawer {
   position: fixed;
-  top: var(--navbar-height, 88px);
-  right: 0;
+  top: 0;
+  left: 0;
   bottom: 0;
-  width: 100%;
-  max-width: 360px;
-  z-index: 1101;
+  width: 78vw;
+  max-width: 340px;
+  min-width: 260px;
+  z-index: 1200;
   background: var(--white);
-  padding: 20px 28px 28px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  gap: 0;
-  transform: translateX(100%);
+  transform: translateX(-100%);
   visibility: hidden;
   transition: transform 0.4s var(--ease-out), visibility 0.4s;
-  box-shadow: -8px 0 40px rgba(10, 22, 40, 0.18);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+  box-shadow: 8px 0 40px rgba(10, 22, 40, 0.18);
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  /* Respect iOS notch / Android nav bar */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
-.mobile-nav.open {
+.mobile-drawer.open {
   transform: translateX(0);
   visibility: visible;
 }
 
-.mobile-nav-links {
+/* --- Drawer header (logo + close X) --- */
+.mobile-drawer-header {
   display: flex;
-  flex-direction: column;
-  gap: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--gray-100);
+  flex-shrink: 0;
+  gap: 12px;
+  min-height: 88px;
 }
 
-.mobile-nav-links a {
-  display: block;
-  padding: 16px 0;
+.mobile-drawer-logo {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.mobile-drawer-logo img {
+  height: 60px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+.mobile-drawer-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  color: var(--navy-900);
+  border: 1px solid rgba(10, 22, 40, 0.08);
+  background: var(--white);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.mobile-drawer-close:hover,
+.mobile-drawer-close:active {
+  background: var(--gray-50);
+  border-color: rgba(10, 22, 40, 0.16);
+}
+
+/* --- Drawer nav (stacked links) --- */
+.mobile-drawer-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 22px;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  /* Keep momentum scroll inside the drawer rather than bleeding to body */
+  overscroll-behavior: contain;
+}
+
+.mobile-drawer-nav a {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 16px 4px;
   font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 1.08rem;
   font-weight: 600;
   color: var(--navy-900);
   border-bottom: 1px solid var(--gray-100);
-  transition: color 0.2s ease;
   letter-spacing: -0.01em;
   line-height: 1.2;
+  transition: color 0.2s ease, padding-left 0.2s ease;
 }
 
-.mobile-nav-links a:first-child {
-  border-top: 1px solid var(--gray-100);
+.mobile-drawer-nav a:last-child {
+  border-bottom: none;
 }
 
-.mobile-nav-links a:hover,
-.mobile-nav-links a:active {
+.mobile-drawer-nav a:hover,
+.mobile-drawer-nav a:active {
   color: var(--teal-500);
+  padding-left: 8px;
 }
 
-.mobile-nav-cta {
-  margin-top: 20px;
-  text-align: center;
-  min-height: 50px;
-  width: 100%;
+/* --- Drawer footer (Get Started CTA) --- */
+.mobile-drawer-footer {
+  padding: 18px 22px calc(22px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--gray-100);
+  flex-shrink: 0;
+  background: var(--white);
+}
+
+.mobile-drawer-cta {
+  display: flex !important;
+  align-items: center;
   justify-content: center;
+  width: 100%;
+  min-height: 50px;
   font-size: 0.95rem;
+  gap: 8px;
+}
+
+/* --- The page shift (mobile only) --- */
+@media (max-width: 900px) {
+  .page-shell.drawer-open {
+    /* Match the drawer width: 78vw, capped at 340px */
+    transform: translateX(min(78vw, 340px));
+  }
 }
 
 @media (max-width: 900px) {
@@ -2041,22 +2137,58 @@ button {
     max-width: 64vw;
   }
 
-  .mobile-nav {
-    padding: 18px 24px 24px;
+  /* Drawer tuning for narrow phones (<= 640px) */
+  .mobile-drawer-header {
+    min-height: 80px;
+    padding: 14px 16px;
   }
 
-  .mobile-nav-links a {
-    padding: 15px 0;
-    font-size: 1.02rem;
+  .mobile-drawer-logo img {
+    height: 54px;
   }
 
-  .mobile-nav-cta {
-    margin-top: 18px;
+  .mobile-drawer-nav {
+    padding: 6px 18px;
+  }
+
+  .mobile-drawer-nav a {
+    min-height: 52px;
+    padding: 14px 4px;
+    font-size: 1.05rem;
+  }
+
+  .mobile-drawer-footer {
+    padding: 16px 18px calc(18px + env(safe-area-inset-bottom));
+  }
+
+  .mobile-drawer-cta {
     min-height: 48px;
   }
 
   .footer-logo-img {
     max-height: 64px;
+  }
+}
+
+/* Extra-narrow phones (iPhone SE, ~320–360px) — give the drawer a touch
+   more breathing room and let it occupy slightly more of the screen so the
+   wordmark logo doesn't get cramped. */
+@media (max-width: 360px) {
+  .mobile-drawer {
+    width: 82vw;
+  }
+
+  .page-shell.drawer-open {
+    transform: translateX(82vw);
+  }
+
+  .mobile-drawer-header {
+    padding: 12px 14px;
+    min-height: 76px;
+  }
+
+  .mobile-drawer-logo img {
+    height: 48px;
   }
 }
 

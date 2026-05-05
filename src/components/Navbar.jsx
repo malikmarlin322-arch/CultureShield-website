@@ -1,45 +1,24 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import logoImg from "../assets/CultureShield_Logo_4.png"
+import { useMobileNav } from "../context/MobileNavContext"
 
+/**
+ * Navbar
+ * ------
+ * Renders the top navigation bar. On desktop (>= 901px) it shows full inline
+ * links + the Get Started CTA. On mobile (<= 900px) it shows just the logo
+ * and a hamburger button which toggles the off-canvas drawer.
+ *
+ * The drawer panel itself is NOT rendered here — it lives in <MobileNavDrawer />
+ * at the App root. Drawer state is shared via <MobileNavProvider>.
+ */
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(false)
   const [scrollProgress, setScrollProgress] = useState(0)
   const location = useLocation()
   const navigate = useNavigate()
-  const scrollPosRef = useRef(0)
-  const headerRef = useRef(null)
-
-  /**
-   * Measure the live navbar height and publish it to CSS as --navbar-height.
-   * The mobile nav panel reads this variable for its `top` so it always starts
-   * flush against the bottom of the navbar — no hardcoded offsets, no gaps.
-   */
-  useEffect(() => {
-    const el = headerRef.current
-    if (!el) return
-
-    const publish = () => {
-      const h = el.getBoundingClientRect().height
-      document.documentElement.style.setProperty("--navbar-height", `${Math.round(h)}px`)
-    }
-
-    publish()
-
-    let ro
-    if (typeof ResizeObserver !== "undefined") {
-      ro = new ResizeObserver(publish)
-      ro.observe(el)
-    }
-    window.addEventListener("resize", publish)
-    window.addEventListener("orientationchange", publish)
-    return () => {
-      if (ro) ro.disconnect()
-      window.removeEventListener("resize", publish)
-      window.removeEventListener("orientationchange", publish)
-    }
-  }, [])
+  const { isOpen, toggle, close } = useMobileNav()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -51,67 +30,6 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
-
-  /**
-   * Bulletproof body scroll lock that works on iOS Safari.
-   * Plain `overflow: hidden` is ignored by iOS — we have to pin the body
-   * with `position: fixed` and restore scroll position on close.
-   */
-  useEffect(() => {
-    const body = document.body
-    const html = document.documentElement
-
-    if (menuOpen) {
-      scrollPosRef.current = window.scrollY || window.pageYOffset || 0
-      body.style.position = "fixed"
-      body.style.top = `-${scrollPosRef.current}px`
-      body.style.left = "0"
-      body.style.right = "0"
-      body.style.width = "100%"
-      body.style.overflow = "hidden"
-      html.style.overflow = "hidden"
-    } else {
-      const restore = scrollPosRef.current
-      body.style.position = ""
-      body.style.top = ""
-      body.style.left = ""
-      body.style.right = ""
-      body.style.width = ""
-      body.style.overflow = ""
-      html.style.overflow = ""
-      // Only restore if we actually have a position to restore (avoids initial jump)
-      if (restore > 0) {
-        window.scrollTo(0, restore)
-      }
-    }
-
-    return () => {
-      body.style.position = ""
-      body.style.top = ""
-      body.style.left = ""
-      body.style.right = ""
-      body.style.width = ""
-      body.style.overflow = ""
-      html.style.overflow = ""
-    }
-  }, [menuOpen])
-
-  // Close on route change
-  useEffect(() => {
-    setMenuOpen(false)
-  }, [location.pathname])
-
-  // Close on Escape key
-  useEffect(() => {
-    if (!menuOpen) return
-    const onKey = (e) => {
-      if (e.key === "Escape") setMenuOpen(false)
-    }
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
-  }, [menuOpen])
-
-  const close = () => setMenuOpen(false)
 
   const handleGetStarted = (e) => {
     e.preventDefault()
@@ -125,7 +43,7 @@ export default function Navbar() {
   }
 
   return (
-    <header ref={headerRef} className={`navbar${scrolled ? " scrolled" : ""}${menuOpen ? " menu-open" : ""}`}>
+    <header className={`navbar${scrolled ? " scrolled" : ""}`}>
       <div
         className="scroll-progress"
         style={{ transform: `scaleX(${scrollProgress / 100})` }}
@@ -147,52 +65,28 @@ export default function Navbar() {
           <Link to="/who-we-serve">Who We Serve</Link>
           <a href="/#contact" className="btn btn-primary navbar-cta" onClick={handleGetStarted}>
             Get Started
-            <svg className="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            <svg className="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+            </svg>
           </a>
         </nav>
 
         <button
+          type="button"
           className="mobile-menu-btn"
-          onClick={() => setMenuOpen(prev => !prev)}
-          aria-label={menuOpen ? "Close navigation" : "Open navigation"}
-          aria-expanded={menuOpen}
-          aria-controls="mobile-nav-panel"
+          onClick={toggle}
+          aria-label={isOpen ? "Close navigation" : "Open navigation"}
+          aria-expanded={isOpen}
+          aria-controls="mobile-nav-drawer"
         >
-          {menuOpen ? (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-          ) : (
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 8h16"/><path d="M4 16h16"/></svg>
-          )}
+          {/* Always show the hamburger icon — the close X lives inside the
+              drawer itself, and the navbar shifts off-screen when the drawer
+              is open so a swap here would be invisible anyway. */}
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <path d="M4 8h16"/><path d="M4 16h16"/>
+          </svg>
         </button>
       </div>
-
-      {/* Backdrop — clicking it closes the menu and blocks page interaction */}
-      <div
-        className={`mobile-nav-backdrop${menuOpen ? " open" : ""}`}
-        onClick={close}
-        onTouchMove={(e) => e.preventDefault()}
-        aria-hidden="true"
-      />
-
-      {/* Slide-in nav panel */}
-      <nav
-        id="mobile-nav-panel"
-        className={`mobile-nav${menuOpen ? " open" : ""}`}
-        aria-hidden={!menuOpen}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Mobile navigation"
-      >
-        <div className="mobile-nav-links">
-          <Link to="/services" onClick={close}>Services</Link>
-          <Link to="/why-cultureshield" onClick={close}>Why CultureShield</Link>
-          <Link to="/who-we-serve" onClick={close}>Who We Serve</Link>
-        </div>
-        <a href="/#contact" className="btn btn-primary mobile-nav-cta" onClick={handleGetStarted}>
-          Get Started
-          <svg className="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-        </a>
-      </nav>
     </header>
   )
 }

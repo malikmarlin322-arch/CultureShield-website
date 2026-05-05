@@ -8,11 +8,23 @@ import WhoWeServePage from "./pages/WhoWeServePage"
 import LabSterilityMaintenance from "./pages/LabSterilityMaintenance"
 import ServiceComingSoon from "./pages/ServiceComingSoon"
 import ScrollToTop from "./components/ScrollToTop"
+import MobileNavDrawer from "./components/MobileNavDrawer"
+import { MobileNavProvider, useMobileNav } from "./context/MobileNavContext"
 
-export default function App() {
+/**
+ * PageShell
+ * ---------
+ * Wraps the navbar + routed pages + footer. When the mobile drawer opens, this
+ * shell receives the .drawer-open class and slides to the right via CSS, which
+ * gives the "page pushes right while drawer slides in from left" effect.
+ *
+ * Importantly, the drawer and overlay are siblings of this shell (not children)
+ * so they remain anchored to the viewport while the page slides.
+ */
+function PageShell() {
+  const { isOpen } = useMobileNav()
   return (
-    <>
-      <ScrollToTop />
+    <div className={`page-shell${isOpen ? " drawer-open" : ""}`}>
       <Navbar />
       <Routes>
         <Route path="/" element={<HomePage />} />
@@ -23,6 +35,16 @@ export default function App() {
         <Route path="/services/:slug" element={<ServiceComingSoon />} />
       </Routes>
       <Footer />
-    </>
+    </div>
+  )
+}
+
+export default function App() {
+  return (
+    <MobileNavProvider>
+      <ScrollToTop />
+      <PageShell />
+      <MobileNavDrawer />
+    </MobileNavProvider>
   )
 }
